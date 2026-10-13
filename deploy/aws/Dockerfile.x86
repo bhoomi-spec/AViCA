@@ -1,0 +1,48 @@
+# syntax=docker/dockerfile:1
+# AViCA Benchmark Deployment — x86_64 Architecture
+# Target instance: AWS c6i.xlarge (Intel Xeon Platinum 8375C Ice Lake, 4 vCPUs, 8 GiB RAM)
+# Cost reference: $0.1700 / hour (US-East-1 On-Demand)
+
+FROM --platform=linux/amd64 node:22-bookworm-slim AS builder
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    python3 \
+    git \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+RUN npm run build
+
+# ==========================================
+# Runtime Stage
+# ==========================================
+FROM --platform=linux/amd64 node:22-bookworm-slim AS runner
+
+WORKDIR /app
+ENV NODE_ENV=production
+ENV BENCHMARK_ARCH=x86_64
+ENV AWS_INSTANCE_TYPE=c6i.xlarge
+ENV HOURLY_COST_USD=0.1700
+
+# Install runtime tools for CPU / memory sampling
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    procps \
+    sysstat \
+    jq \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /app /app
+
+# Create output directory for telemetry
+RUN mkdir -p /app/benchmark-results
+
+ENTRYPOINT ["node", "scripts/run_graviton_benchmark.js"]
+CMD ["--frames=200", "--env=x86_c6i", "--out=/app/benchmark-results/x86_telemetry.json"]

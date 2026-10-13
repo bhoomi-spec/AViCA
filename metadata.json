@@ -1,0 +1,6 @@
+{
+  "name": "AViCA — Adaptive Visual Cognitive Architecture",
+  "description": "An uncertainty-driven computational architecture for active visual perception, visual working memory, spatial reasoning, predictive perception, and reinforcement-learning-based visual attention.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

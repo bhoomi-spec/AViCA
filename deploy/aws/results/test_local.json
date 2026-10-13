@@ -1,0 +1,32 @@
+{
+  "status": "MEASURED_LOCAL",
+  "environmentName": "Local Host (x64)",
+  "instanceType": "Local Machine",
+  "architecture": "x64",
+  "vCpuCount": 2,
+  "memoryGb": 4,
+  "hourlyCostUsd": 0.17,
+  "totalFrames": 30,
+  "totalDurationMs": 289,
+  "fps": 103.9,
+  "latencyMeanMs": 9.12,
+  "latencyP50Ms": 5.12,
+  "latencyP95Ms": 31.64,
+  "latencyP99Ms": 39.94,
+  "throughputMpxPerSec": 26.6,
+  "cpuUserMs": 390,
+  "cpuSystemMs": 0,
+  "cpuUtilizationPercent": 100,
+  "memoryHeapUsedMb": 16.7,
+  "memoryRssMb": 184.5,
+  "performancePerDollar": 611.2,
+  "executedAt": "2026-10-11T08:22:26.186Z",
+  "notes": "Executed on local runtime environment (x64). Ground truth isolated.",
+  "executionHostInfo": {
+    "platform": "linux",
+    "release": "4.19.0-gvisor",
+    "cpuModel": "unknown",
+    "kernelArch": "x64",
+    "nodeVersion": "v22.23.2"
+  }
+}

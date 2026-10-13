@@ -1,0 +1,61 @@
+# syntax=docker/dockerfile:1
+# AViCA Benchmark Deployment — AWS Graviton + COOL
+# (Container Optimization & Orchestration Layer / Cloud Optimization Online Layer)
+# Target instance: AWS c7g.xlarge (AWS Graviton3 Neoverse-V1 + COOL optimization stack)
+# Cost reference: $0.1445 / hour (US-East-1 On-Demand)
+
+FROM --platform=linux/arm64 node:22-bookworm-slim AS builder
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    python3 \
+    git \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# COOL Compile profile: Strict Armv8.5-A vectorization + LSE atomics
+ENV CFLAGS="-O3 -march=armv8.5-a+crypto+fp16+dotprod+sve -mtune=neoverse-v1 -flto"
+ENV CXXFLAGS="-O3 -march=armv8.5-a+crypto+fp16+dotprod+sve -mtune=neoverse-v1 -flto"
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+RUN npm run build
+
+# ==========================================
+# Runtime Stage: Graviton + COOL Profile
+# ==========================================
+FROM --platform=linux/arm64 node:22-bookworm-slim AS runner
+
+WORKDIR /app
+ENV NODE_ENV=production
+ENV BENCHMARK_ARCH=arm64_graviton_cool
+ENV AWS_INSTANCE_TYPE=c7g.xlarge
+ENV HOURLY_COST_USD=0.1445
+ENV COOL_OPTIMIZATION_ACTIVE=true
+
+# Install jemalloc, numactl for core pinning, and sysstat
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libjemalloc2 \
+    numactl \
+    procps \
+    sysstat \
+    jq \
+    && rm -rf /var/lib/apt/lists/*
+
+# COOL Memory Allocator Configuration: 1 arena per Graviton vCPU, aggressive decay
+ENV LD_PRELOAD=/usr/lib/aarch64-linux-gnu/libjemalloc.so.2
+ENV MALLOC_CONF="narenas:4,background_thread:true,metadata_thp:auto,dirty_decay_ms:1000,muzzy_decay_ms:1000,tcache_max:65536"
+
+# COOL V8 Engine Profile: WebAssembly SIMD vectorization, GC semi-space expansion, turbofan tiering
+ENV NODE_OPTIONS="--experimental-wasm-simd --max-semi-space-size=128 --max-old-space-size=4096 --optimize-for-size=false"
+
+COPY --from=builder /app /app
+RUN mkdir -p /app/benchmark-results
+
+# Entrypoint with numactl core pinning for zero core-hopping cache invalidation
+ENTRYPOINT ["numactl", "--physcpubind=0,1,2,3", "--localalloc", "node", "scripts/run_graviton_benchmark.js"]
+CMD ["--frames=200", "--env=graviton_cool_c7g", "--out=/app/benchmark-results/graviton_cool_telemetry.json"]

@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  # 1. Baseline x86 Architecture (Intel Xeon c6i.xlarge profile)
+  benchmark-x86:
+    build:
+      context: ../../
+      dockerfile: deploy/aws/Dockerfile.x86
+    image: avica/benchmark:x86_c6i
+    platform: linux/amd64
+    container_name: avica-benchmark-x86
+    cpus: 4.0
+    mem_limit: 8192m
+    environment:
+      - BENCHMARK_ARCH=x86_64
+      - AWS_INSTANCE_TYPE=c6i.xlarge
+      - HOURLY_COST_USD=0.1700
+      - FRAME_COUNT=200
+      - SEED=101
+    volumes:
+      - ./results:/app/benchmark-results
+
+  # 2. AWS Graviton3 / Arm64 (c7g.xlarge profile)
+  benchmark-graviton:
+    build:
+      context: ../../
+      dockerfile: deploy/aws/Dockerfile.graviton
+    image: avica/benchmark:graviton_c7g
+    platform: linux/arm64
+    container_name: avica-benchmark-graviton
+    cpus: 4.0
+    mem_limit: 8192m
+    environment:
+      - BENCHMARK_ARCH=arm64_graviton
+      - AWS_INSTANCE_TYPE=c7g.xlarge
+      - HOURLY_COST_USD=0.1445
+      - FRAME_COUNT=200
+      - SEED=101
+    volumes:
+      - ./results:/app/benchmark-results
+
+  # 3. AWS Graviton3 + COOL (Container Optimization & Orchestration Layer)
+  benchmark-graviton-cool:
+    build:
+      context: ../../
+      dockerfile: deploy/aws/Dockerfile.graviton-cool
+    image: avica/benchmark:graviton_cool_c7g
+    platform: linux/arm64
+    container_name: avica-benchmark-graviton-cool
+    cpus: 4.0
+    mem_limit: 8192m
+    environment:
+      - BENCHMARK_ARCH=arm64_graviton_cool
+      - AWS_INSTANCE_TYPE=c7g.xlarge
+      - HOURLY_COST_USD=0.1445
+      - COOL_OPTIMIZATION_ACTIVE=true
+      - FRAME_COUNT=200
+      - SEED=101
+    cap_add:
+      - SYS_NICE
+    volumes:
+      - ./results:/app/benchmark-results

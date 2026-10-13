@@ -1,0 +1,40 @@
+{
+  "family": "avica-benchmark-graviton",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE", "EC2"],
+  "cpu": "4096",
+  "memory": "8192",
+  "runtimePlatform": {
+    "cpuArchitecture": "ARM64",
+    "operatingSystemFamily": "LINUX"
+  },
+  "containerDefinitions": [
+    {
+      "name": "avica-graviton-runner",
+      "image": "123456789012.dkr.ecr.us-east-1.amazonaws.com/avica-benchmark:graviton-cool-latest",
+      "essential": true,
+      "cpu": 4096,
+      "memory": 8192,
+      "environment": [
+        { "name": "NODE_ENV", "value": "production" },
+        { "name": "BENCHMARK_ARCH", "value": "arm64_graviton_cool" },
+        { "name": "AWS_INSTANCE_TYPE", "value": "c7g.xlarge" },
+        { "name": "HOURLY_COST_USD", "value": "0.1445" },
+        { "name": "COOL_OPTIMIZATION_ACTIVE", "value": "true" }
+      ],
+      "command": [
+        "--frames=500",
+        "--env=graviton_cool_c7g",
+        "--out=/app/benchmark-results/graviton_cool_telemetry.json"
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/avica-benchmarks",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "graviton-c7g"
+        }
+      }
+    }
+  ]
+}
